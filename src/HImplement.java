@@ -1,6 +1,5 @@
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Stack;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class HImplement implements Hill_Cipher {
     /**
@@ -13,10 +12,37 @@ public class HImplement implements Hill_Cipher {
         return s.chars().toArray();
     }
 
+    public String vectorToString(int[] v) {
+        return Arrays.stream(v).mapToObj(i -> String.valueOf((char) i)).collect(Collectors.joining());
+    }
+
+    private int[] Ax(int[][] matrix, int[] vector) {
+        /*
+        1 2 | 2
+        3 4 | 3
+         */
+        var output = new int[vector.length];
+        for (int i = 0; i < vector.length; i++) {
+            int sum = 0;
+            for (int j = 0; j < matrix.length; j++) {
+                sum += matrix[i][j] * vector[j];
+            }
+            output[i] = sum;
+        }
+        return output;
+    }
+
     @Override
     public String encrypt(String s, int[][] key) {
+        StringBuilder sBuilder = new StringBuilder(s);
+        while (sBuilder.length() % key.length > 0) {
+            sBuilder.append("x");
+        }
+        s = sBuilder.toString();
 
-        return null;
+        List<int[]> blocks = Arrays.stream(s.split("(?<=\\G.{" + key.length + "})")).map(this::stringToVector).collect(Collectors.toList());
+
+        return blocks.stream().map(i -> Ax(key, i)).map(this::vectorToString).collect(Collectors.joining());
     }
 
     @Override
@@ -62,7 +88,7 @@ public class HImplement implements Hill_Cipher {
                 }
                 case 2 -> {
                     Gauss_Jordan.rowSubtract(key, r1, r2);
-                    gJOp.push(new Integer[]{2,r1,r2});
+                    gJOp.push(new Integer[]{2, r1, r2});
                 }
                 case 3 -> {
                     // prevent row multiplication by 0
@@ -74,20 +100,36 @@ public class HImplement implements Hill_Cipher {
                     gJOp.push(new Integer[]{3, r1, k});
                 }
             }
-
-
         }
 
         // calculate inverse matrix
         for (int i = 0; i < gJOp.size(); i++) {
             var e = gJOp.pop();
             switch (e[0]) {
-                case 0 -> Gauss_Jordan.swap(invert,e[1],e[2]);
-                case 1 -> Gauss_Jordan.rowAdd(invert,e[1],e[2]);
-                case 2 -> Gauss_Jordan.rowSubtract(invert,e[1],e[2]);
-                case 3 -> Gauss_Jordan.rowMultiply(invert,e[1],e[2]);
+                case 0 -> Gauss_Jordan.swap(invert, e[1], e[2]);
+                case 1 -> Gauss_Jordan.rowAdd(invert, e[1], e[2]);
+                case 2 -> Gauss_Jordan.rowSubtract(invert, e[1], e[2]);
+                case 3 -> Gauss_Jordan.rowMultiply(invert, e[1], e[2]);
             }
         }
-        return null;
+
+        //convert matrix into a string
+        StringBuilder k = new StringBuilder();
+        k.append(n).append(" ");
+        for (int i = 0; i < key.length; i++) {
+            for (int j = 0; j < key.length; j++) {
+                k.append(key[i][j]).append(" ");
+            }
+        }
+
+        StringBuilder iv = new StringBuilder();
+        iv.append(n).append(" ");
+        for (int i = 0; i < key.length; i++) {
+            for (int j = 0; j < key.length; j++) {
+                iv.append(invert[i][j]).append(" ");
+            }
+        }
+
+        return new String[]{k.toString(), iv.toString()};
     }
 }

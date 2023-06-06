@@ -4,6 +4,8 @@ public class Main {
     public static void main(String[] args) {
         var hc = new HImplement();
 
-        System.out.println(Arrays.deepToString(hc.randomKey(3, 100, -3,3)));
+        int[][] key = {{2,0},{0,2}};
+
+        System.out.println(hc.encrypt("abc",key));
     }
 }
