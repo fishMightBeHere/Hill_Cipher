@@ -13,10 +13,10 @@ public class HImplement implements Hill_Cipher {
     }
 
     public String vectorToString(int[] v) {
-        return Arrays.stream(v).mapToObj(i -> String.valueOf((char) i)).collect(Collectors.joining());
+        return Arrays.stream(v).mapToObj(i -> String.valueOf((char) ((i%26)+65))).collect(Collectors.joining());
     }
 
-    private int[] Ax(int[][] matrix, int[] vector) {
+    private int[] Ax(double[][] matrix, int[] vector) {
         /*
         1 2 | 2
         3 4 | 3
@@ -27,16 +27,36 @@ public class HImplement implements Hill_Cipher {
             for (int j = 0; j < matrix.length; j++) {
                 sum += matrix[i][j] * vector[j];
             }
-            output[i] = sum;
+            output[i] = sum%26+65;
         }
         return output;
     }
 
+    public double[][] parseKey(String s) {
+        Queue<Double> chq = Arrays.stream(s.split(" ")).map(Double::parseDouble).collect(Collectors.toCollection(LinkedList::new));
+
+        assert chq.size() > 0 : "key is empty";
+        double[][] key = new double[(int) Math.floor(chq.peek())][(int) Math.floor(chq.remove())];
+
+        var n = Math.sqrt(chq.size());
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                assert chq.peek() != null : "missing elements in key";
+                key[i][j] = chq.remove();
+            }
+        }
+
+        return key;
+    }
+
     @Override
-    public String encrypt(String s, int[][] key) {
+    public String encrypt(String s, String k) {
+
+        var key = parseKey(k);
+
         StringBuilder sBuilder = new StringBuilder(s);
         while (sBuilder.length() % key.length > 0) {
-            sBuilder.append("x");
+            sBuilder.append("X");
         }
         s = sBuilder.toString();
 
@@ -46,7 +66,7 @@ public class HImplement implements Hill_Cipher {
     }
 
     @Override
-    public String decrypt(String s, int[][] key) {
+    public String decrypt(String s, String key) {
         return null;
     }
 
@@ -62,8 +82,8 @@ public class HImplement implements Hill_Cipher {
     @Override
     public String[] randomKey(int n, int opn, int lb, int ub) {
         Stack<Integer[]> gJOp = new Stack<>();
-        int[][] key = new int[n][n];
-        int[][] invert = new int[n][n];
+        double[][] key = new double[n][n];
+        double[][] invert = new double[n][n];
         // create identity matrix
         for (int i = 0; i < n; i++) {
             key[i][i] = 1;
@@ -72,12 +92,12 @@ public class HImplement implements Hill_Cipher {
         // perform random gauss jordan operations to create an invertible matrix
         for (int i = 0; i < opn; i++) {
             int r1 = (int) (Math.random() * n);
-            int r2 = r1; //prevent r1 = r2
+            int r2; //prevent r1 = r2
             do {
                 r2 = (int) (Math.random() * n);
             } while (r1 == r2);
 
-            switch ((int) (Math.random() * 4)) {
+            switch ((int) (Math.random() * 3)) {
                 case 0 -> {
                     Gauss_Jordan.swap(key, r1, r2);
                     gJOp.push(new Integer[]{0, r1, r2});
@@ -92,7 +112,7 @@ public class HImplement implements Hill_Cipher {
                 }
                 case 3 -> {
                     // prevent row multiplication by 0
-                    int k = 0;
+                    int k;
                     do {
                         k = (int) (Math.random() * (ub - lb)) + lb;
                     } while (k == 0);
@@ -103,13 +123,13 @@ public class HImplement implements Hill_Cipher {
         }
 
         // calculate inverse matrix
-        for (int i = 0; i < gJOp.size(); i++) {
+        while (gJOp.size()>0) {
             var e = gJOp.pop();
             switch (e[0]) {
                 case 0 -> Gauss_Jordan.swap(invert, e[1], e[2]);
-                case 1 -> Gauss_Jordan.rowAdd(invert, e[1], e[2]);
-                case 2 -> Gauss_Jordan.rowSubtract(invert, e[1], e[2]);
-                case 3 -> Gauss_Jordan.rowMultiply(invert, e[1], e[2]);
+                case 1 -> Gauss_Jordan.rowSubtract(invert, e[1], e[2]);
+                case 2 -> Gauss_Jordan.rowAdd(invert, e[1], e[2]);
+                case 3 -> Gauss_Jordan.rowMultiply(invert, e[1], 1.0 / e[2]);
             }
         }
 
