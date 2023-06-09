@@ -12,7 +12,7 @@ public class HImplement implements Hill_Cipher {
         return s.chars().toArray();
     }
 
-    public String vectorToString(int[] v) {
+    private String vectorToString(int[] v) {
         return Arrays.stream(v).mapToObj(i -> String.valueOf((char) ((i%26)+65))).collect(Collectors.joining());
     }
 
@@ -32,7 +32,7 @@ public class HImplement implements Hill_Cipher {
         return output;
     }
 
-    public double[][] parseKey(String s) {
+    private double[][] parseKey(String s) {
         Queue<Double> chq = Arrays.stream(s.split(" ")).map(Double::parseDouble).collect(Collectors.toCollection(LinkedList::new));
 
         assert chq.size() > 0 : "key is empty";
